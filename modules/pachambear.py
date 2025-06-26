@@ -99,12 +99,28 @@ def create_cul_chart(df):
     st.plotly_chart(fig, use_container_width=True)
 
 def create_trend_chart(df):
-    """Gráfico de tendencia mensual"""
-    st.markdown("### 📈 Tendencia Mensual de Solicitudes")
+    """Gráfico de tendencia mensual CORREGIDO"""
+    st.markdown("### 📈 Tendencia Mensual de Solicitudes (Orden Cronológico)")
     
-    monthly = df.groupby(['MES', 'FECHA']).size().reset_index(name='SOLICITUDES')
-    monthly = monthly.sort_values('FECHA')
+    # Crear columna numérica de mes para ordenar
+    df['MES_NUM'] = df['FECHA'].dt.month
     
+    # Agrupar y ordenar correctamente
+    monthly = df.groupby(['MES', 'MES_NUM']).size().reset_index(name='SOLICITUDES')
+    monthly = monthly.sort_values('MES_NUM')
+    
+    # Definir orden personalizado
+    month_order = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
+                  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+    
+    # Convertir a categoría ordenada
+    monthly['MES'] = pd.Categorical(
+        monthly['MES'], 
+        categories=month_order, 
+        ordered=True
+    )
+    
+    # Crear gráfico
     fig = px.line(
         monthly,
         x='MES',
@@ -112,12 +128,15 @@ def create_trend_chart(df):
         markers=True,
         line_shape='spline',
         color_discrete_sequence=['#3498db'],
-        height=400
+        height=400,
+        labels={'SOLICITUDES': 'Total Solicitudes', 'MES': 'Mes'}
     )
     
+    # Mejorar formato
     fig.update_layout(
         xaxis_title='Mes',
-        yaxis_title='Total Solicitudes'
+        yaxis_title='Total Solicitudes',
+        xaxis={'type': 'category'}
     )
     
     st.plotly_chart(fig, use_container_width=True)
