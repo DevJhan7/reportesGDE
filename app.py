@@ -1,27 +1,25 @@
 import streamlit as st
 from modules.pachambear import show_pachambear_module
 
-# Configuración de página
+# Configuración de la página
 st.set_page_config(
-    page_title="Sistema de Reportes Laborales",
+    page_title="Sistema PACHAMBEAR",
     page_icon="📋",
     layout="wide"
 )
 
-# Sidebar con navegación
-st.sidebar.title("🏗️ Módulos Disponibles")
-modulo_activo = st.sidebar.radio(
-    "Seleccione el área:",
-    ("PACHAMBEAR", "OTRO_MODULO")  # Añadir más módulos aquí
+# Sidebar
+st.sidebar.title("Navegación")
+modulo = st.sidebar.radio(
+    "Seleccione módulo:",
+    ("PACHAMBEAR", "Otros reportes")
 )
 
-# Título principal
-st.title("📋 CUADRO DE ATENCIÓN AL ADMINISTRADO")
-st.markdown("**Sistema Integrado de Bolsa de Trabajo y Certificado Único Laboral**")
+# Contenido principal
+st.title("📋 Sistema de Reportes Laborales")
 st.markdown("---")
 
-# Cargar módulo seleccionado
-if modulo_activo == "PACHAMBEAR":
+if modulo == "PACHAMBEAR":
     show_pachambear_module()
 else:
-    st.warning("Módulo en desarrollo")
+    st.info("Módulo en desarrollo")
