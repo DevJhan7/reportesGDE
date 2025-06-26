@@ -2,63 +2,54 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 from pathlib import Path
+from utils.helpers import get_spanish_month, format_date
 
 def load_pachambear_data():
-    """Carga automática del CSV desde la carpeta data"""
+    """Carga y procesa los datos usando helpers"""
     try:
         data_path = Path(__file__).parent.parent / "data" / "reporte_pachambear.csv"
         df = pd.read_csv(data_path, sep=';', encoding='utf-8')
         
-        # Procesamiento básico
+        # Procesamiento con funciones de helpers
         df['FECHA'] = pd.to_datetime(df['FECHA'], dayfirst=True)
-        df['MES'] = df['FECHA'].dt.month_name(locale='es')
+        df['MES'] = df['FECHA'].dt.month.map(get_spanish_month)
+        df['FECHA_FORMATEADA'] = df['FECHA'].dt.strftime('%d/%m/%Y').apply(format_date)
+        
+        # Limpieza
+        df['CATEGORIA'] = df['CATEGORIA'].str.strip().fillna('Sin categoría')
+        df['CUL'] = df['CUL'].str.strip().fillna('Sin estado')
+        
         return df
     except Exception as e:
         st.error(f"Error al cargar datos: {str(e)}")
         return None
 
 def show_pachambear_charts(df):
-    """Genera los gráficos con títulos personalizados"""
-    # --- Gráfico 1: Distribución por categoría ---
-    st.markdown("### 📌 Gráfico 1: Distribución de Solicitudes por Categoría Laboral")
-    fig1 = px.bar(
-        df['CATEGORIA'].value_counts().reset_index(),
-        x='count',
-        y='CATEGORIA',
-        orientation='h',
-        labels={'count': 'N° Solicitudes', 'CATEGORIA': ''},
-        color='CATEGORIA'
-    )
+    """Genera gráficos interactivos"""
+    # Gráfico 1 - Distribución por categoría
+    st.markdown("### 📊 Distribución por Categoría Laboral")
+    category_counts = df['CATEGORIA'].value_counts().reset_index()
+    fig1 = px.bar(category_counts, x='count', y='CATEGORIA', orientation='h')
     st.plotly_chart(fig1, use_container_width=True)
-    
-    # --- Gráfico 2: Estados CUL ---
-    st.markdown("### 📝 Gráfico 2: Estado de Certificados Únicos Laborales (CUL)")
-    fig2 = px.pie(
-        df['CUL'].value_counts().reset_index(),
-        names='CUL',
-        values='count',
-        hole=0.3,
-        labels={'count': 'Total'}
-    )
+
+    # Gráfico 2 - Estados CUL
+    st.markdown("### 📝 Estado de Certificados")
+    fig2 = px.pie(df, names='CUL', hole=0.3)
     st.plotly_chart(fig2, use_container_width=True)
-    
-    # --- Gráfico 3: Tendencia mensual ---
-    st.markdown("### 📈 Gráfico 3: Evolución Mensual de Solicitudes")
-    monthly = df.groupby('MES').size().reset_index(name='SOLICITUDES')
-    fig3 = px.line(
-        monthly,
-        x='MES',
-        y='SOLICITUDES',
-        markers=True,
-        labels={'SOLICITUDES': 'Total Solicitudes', 'MES': 'Mes'}
-    )
+
+    # Gráfico 3 - Tendencia mensual
+    st.markdown("### 📈 Tendencia Mensual")
+    monthly = df.groupby('MES', observed=True).size().reset_index(name='SOLICITUDES')
+    fig3 = px.line(monthly, x='MES', y='SOLICITUDES', markers=True)
     st.plotly_chart(fig3, use_container_width=True)
 
 def show_pachambear_module():
-    """Módulo completo de PACHAMBEAR"""
-    st.header("Módulo PACHAMBEAR")
-    st.markdown("---")
+    """Módulo principal"""
+    st.header("🔍 Módulo PACHAMBEAR")
+    with st.spinner("Cargando datos..."):
+        df = load_pachambear_data()
     
-    df = load_pachambear_data()
     if df is not None:
         show_pachambear_charts(df)
+        with st.expander("🔎 Ver datos crudos"):
+            st.dataframe(df)
