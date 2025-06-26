@@ -6,14 +6,14 @@ SPANISH_MONTHS = {
     9: "Septiembre", 10: "Octubre", 11: "Noviembre", 12: "Diciembre"
 }
 
-def format_date(date_str, date_format="%d/%m/%Y"):
-    """Formatea fechas en español con manejo de errores"""
-    try:
-        date_obj = datetime.strptime(date_str, date_format)
-        return f"{date_obj.day} de {SPANISH_MONTHS[date_obj.month]} de {date_obj.year}"
-    except (ValueError, KeyError) as e:
-        return date_str  # Devuelve el string original si hay error
-
 def get_spanish_month(month_number):
-    """Obtiene el nombre del mes en español"""
+    """Devuelve el nombre del mes en español"""
     return SPANISH_MONTHS.get(month_number, "Mes inválido")
+
+def format_date(date_str):
+    """Formatea fecha a texto en español"""
+    try:
+        date_obj = datetime.strptime(date_str, "%d/%m/%Y")
+        return f"{date_obj.day} de {SPANISH_MONTHS[date_obj.month]} de {date_obj.year}"
+    except:
+        return date_str
