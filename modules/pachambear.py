@@ -29,7 +29,7 @@ CUL_COLORS = {
 def load_pachambear_data():
     """Carga y procesa los datos del CSV"""
     try:
-        data_path = Path(__file__).parent.parent / "data" / "reporte_pachambear.csv"
+        data_path = Path(__file__).parent.parent / "data" / "reporte_pachambear2.csv"
         df = pd.read_csv(data_path, sep=';', encoding='utf-8')
         
         # Procesamiento de fechas
