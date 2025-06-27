@@ -29,7 +29,7 @@ CUL_COLORS = {
 def load_pachambear_data():
     """Carga y procesa los datos del CSV"""
     try:
-        data_path = Path(__file__).parent.parent / "data" / "reporte_pachambear2.csv"
+        data_path = Path(__file__).parent.parent / "data" / "reporte_pachambear3.csv"
         df = pd.read_csv(data_path, sep=';', encoding='utf-8')
         
         # Procesamiento de fechas
@@ -48,7 +48,7 @@ def load_pachambear_data():
 
 def create_category_chart(df):
     """Gráfico de distribución por categoría"""
-    st.markdown("### 🌈 Distribución por Categoría Laboral")
+    st.markdown("### Distribución por Categoría Laboral")
     
     category_counts = df['CATEGORIA'].value_counts().reset_index()
     fig = px.bar(
