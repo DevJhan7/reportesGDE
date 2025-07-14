@@ -16,7 +16,7 @@ modulo = st.sidebar.radio(
 )
 
 # Contenido principal
-st.title("📋 Sistema de Reportes Estadísticos de la Gerencia de Licencias y Desarrollo Económico")
+st.title("📋Reportes Estadísticos de la Gerencia de Licencias y Desarrollo Económico")
 st.markdown("---")
 
 if modulo == "PACHAMBEAR":
