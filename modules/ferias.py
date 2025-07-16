@@ -8,26 +8,27 @@ from utils.helpers import get_spanish_month
 COLOR_MAP = px.colors.qualitative.Set3
 
 def load_ferias_data(year):
-    """Carga datos procesados por año desde archivo CSV con macro categorías"""
+    """Carga archivo unificado por año con clasificación y limpieza previa"""
     archivo = Path(__file__).parent.parent / "data" / "ferias" / f"{year}_ferias_macro.csv"
     if not archivo.exists():
         return pd.DataFrame()
 
     df = pd.read_csv(archivo, sep=';', encoding='utf-8')
-    
-    # Fecha
+
     if 'INGRESO' in df.columns:
         df["INGRESO"] = pd.to_datetime(df["INGRESO"], dayfirst=True, errors="coerce")
         df["MES"] = df["INGRESO"].dt.month.map(get_spanish_month)
     elif 'FECHA DE INGRESO' in df.columns:
         df["INGRESO"] = pd.to_datetime(df["FECHA DE INGRESO"], dayfirst=True, errors="coerce")
         df["MES"] = df["INGRESO"].dt.month.map(get_spanish_month)
-    
+
     return df
 
 def grafico_participantes(df):
     participantes = df["FERIA"].value_counts().reset_index()
     participantes.columns = ["FERIA", "N_PARTICIPANTES"]
+    participantes = participantes.sort_values("N_PARTICIPANTES")  # orden ascendente
+
     fig = px.bar(participantes, x="FERIA", y="N_PARTICIPANTES",
                  title="👥 Participantes por Feria",
                  color="FERIA", color_discrete_sequence=COLOR_MAP,
@@ -38,6 +39,8 @@ def grafico_participantes(df):
 def grafico_recaudacion(df):
     df["MONTO"] = pd.to_numeric(df["MONTO"], errors="coerce")
     recaudacion = df.groupby("FERIA")["MONTO"].sum().reset_index()
+    recaudacion = recaudacion.sort_values("MONTO")  # orden ascendente
+
     fig = px.bar(recaudacion, x="FERIA", y="MONTO",
                  title="💰 Recaudación Total por Feria",
                  color="FERIA", color_discrete_sequence=COLOR_MAP,
@@ -68,7 +71,7 @@ def show_ferias_module():
     st.header("📊 Módulo de Ferias Laborales")
     st.markdown("---")
 
-    anio = st.selectbox("Seleccionar año:", options=["2023", "2024", "2025"], index=0)
+    anio = st.selectbox("Seleccionar año:", options=["2023", "2024", "2025"], index=1)
 
     with st.spinner("Cargando datos..."):
         df = load_ferias_data(anio)
@@ -97,6 +100,5 @@ def show_ferias_module():
     st.markdown("---")
     grafico_inscripciones(df)
 
-    with st.expander("📁 Ver datos crudos"):
-        st.dataframe(df)
+
 
