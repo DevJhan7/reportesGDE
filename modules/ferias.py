@@ -4,21 +4,25 @@ import streamlit as st
 from pathlib import Path
 from utils.helpers import get_spanish_month
 
-# Paleta de colores personalizada
+# Paleta de colores
 COLOR_MAP = px.colors.qualitative.Set3
 
 def load_ferias_data(year):
-    """Carga un archivo unificado con macro categorías"""
+    """Carga datos procesados por año desde archivo CSV con macro categorías"""
     archivo = Path(__file__).parent.parent / "data" / "ferias" / f"{year}_ferias_macro.csv"
     if not archivo.exists():
         return pd.DataFrame()
 
     df = pd.read_csv(archivo, sep=';', encoding='utf-8')
-
+    
+    # Fecha
     if 'INGRESO' in df.columns:
         df["INGRESO"] = pd.to_datetime(df["INGRESO"], dayfirst=True, errors="coerce")
         df["MES"] = df["INGRESO"].dt.month.map(get_spanish_month)
-
+    elif 'FECHA DE INGRESO' in df.columns:
+        df["INGRESO"] = pd.to_datetime(df["FECHA DE INGRESO"], dayfirst=True, errors="coerce")
+        df["MES"] = df["INGRESO"].dt.month.map(get_spanish_month)
+    
     return df
 
 def grafico_participantes(df):
@@ -81,7 +85,7 @@ def show_ferias_module():
 
     st.markdown("---")
 
-    # Mostrar los dos primeros gráficos en la misma fila
+    # Gráficos lado a lado
     col_a, col_b = st.columns(2)
     with col_a:
         grafico_participantes(df)
