@@ -1,25 +1,29 @@
 import streamlit as st
 from modules.pachambear import show_pachambear_module
+from modules.ferias import show_ferias_module
 
 # Configuración de la página
 st.set_page_config(
-    page_title="Sistema PACHAMBEAR",
-    page_icon="📋",
+    page_title="Sistema de Reportes Municipales",
+    page_icon="📊",
     layout="wide"
 )
 
-# Sidebar
-st.sidebar.title("Navegación")
+# Sidebar de navegación
+st.sidebar.title("📁 Navegación")
 modulo = st.sidebar.radio(
-    "Seleccione módulo:",
-    ("PACHAMBEAR", "Otros reportes")
+    "Seleccione un módulo:",
+    ("PACHAMBEAR", "FERIAS", "Otros reportes")
 )
 
-# Contenido principal
-st.title("📋Reportes Estadísticos de la Gerencia de Licencias y Desarrollo Económico")
+# Encabezado principal
+st.title("📋 Reportes Estadísticos de la Gerencia de Licencias y Desarrollo Económico")
 st.markdown("---")
 
+# Mostrar módulo seleccionado
 if modulo == "PACHAMBEAR":
     show_pachambear_module()
+elif modulo == "FERIAS":
+    show_ferias_module()
 else:
-    st.info("Módulo en desarrollo")
+    st.info("⚙️ Módulo en desarrollo. Próximamente disponible.")
