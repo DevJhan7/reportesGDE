@@ -1,7 +1,7 @@
 
-# App CRUD - Registro de Comercio Ambulatorio
+# App CRUD - Reportes Estadísticos
 
-Este proyecto es una aplicación en Streamlit para registrar y gestionar solicitudes de comercio ambulatorio.
+Este proyecto es una aplicación en Streamlit para ver los diferentes gráficos estadísticos de los programas de la Gerencia de Desarollo Económico
 
 ## Uso
 
