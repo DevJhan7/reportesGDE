@@ -25,10 +25,21 @@ def load_ferias_data(year):
     return df
 
 
-def grafico_participantes(df):
+def grafico_participantes(df, orden):
     participantes = df['FERIA'].value_counts().reset_index()
     participantes.columns = ['FERIA', 'N_PARTICIPANTES']
-    participantes = participantes.sort_values('N_PARTICIPANTES')
+
+    # Agregar orden por fecha
+    fechas = df.groupby("FERIA")['INGRESO'].min().reset_index()
+    participantes = participantes.merge(fechas, on="FERIA")
+
+    if orden == "Ascendente":
+        participantes = participantes.sort_values("N_PARTICIPANTES")
+    elif orden == "Descendente":
+        participantes = participantes.sort_values("N_PARTICIPANTES", ascending=False)
+    else:  # Por fecha
+        participantes = participantes.sort_values("INGRESO")
+
     fig = px.bar(
         participantes,
         x='FERIA', y='N_PARTICIPANTES',
@@ -40,10 +51,19 @@ def grafico_participantes(df):
     st.plotly_chart(fig, use_container_width=True)
 
 
-def grafico_recaudacion(df):
+def grafico_recaudacion(df, orden):
     df['MONTO'] = pd.to_numeric(df['MONTO'], errors='coerce')
     recaudacion = df.groupby('FERIA')['MONTO'].sum().reset_index()
-    recaudacion = recaudacion.sort_values('MONTO')
+    fechas = df.groupby("FERIA")['INGRESO'].min().reset_index()
+    recaudacion = recaudacion.merge(fechas, on="FERIA")
+
+    if orden == "Ascendente":
+        recaudacion = recaudacion.sort_values("MONTO")
+    elif orden == "Descendente":
+        recaudacion = recaudacion.sort_values("MONTO", ascending=False)
+    else:  # Por fecha
+        recaudacion = recaudacion.sort_values("INGRESO")
+
     fig = px.bar(
         recaudacion,
         x='FERIA', y='MONTO',
@@ -71,7 +91,6 @@ def grafico_macro_rubros(df):
 
 
 def grafico_trend_mensual(df):
-    # Agrupar por mes y año
     df_valid = df[df['INGRESO'].notna()]
     if df_valid.empty:
         st.info('No hay fechas para mostrar tendencia mensual.')
@@ -81,22 +100,20 @@ def grafico_trend_mensual(df):
         .size()
         .reset_index(name='INSCRIPCIONES')
     )
-    # Convertir periodo a datetime para gráfico
-    monthly['MES_ANIO'] = monthly['INGRESO'].dt.to_timestamp()
-    # Filtrar solo periodos existentes
+    monthly['MES_AÑO'] = monthly['INGRESO'].dt.to_timestamp()
     fig = px.line(
         monthly,
-        x='MES_ANIO', y='INSCRIPCIONES',
+        x='MES_AÑO', y='INSCRIPCIONES',
         markers=True,
-        line_shape='spline',  # curva suave
+        line_shape='spline',
         title='📈 Tendencia Mensual de Inscripciones',
         color_discrete_sequence=['#3498db']
     )
     fig.update_xaxes(
         tickformat='%b %Y',
         tickmode='array',
-        tickvals=monthly['MES_ANIO'],
-        ticktext=monthly['MES_ANIO'].dt.strftime('%b %Y')
+        tickvals=monthly['MES_AÑO'],
+        ticktext=monthly['MES_AÑO'].dt.strftime('%b %Y')
     )
     st.plotly_chart(fig, use_container_width=True)
 
@@ -105,7 +122,6 @@ def show_ferias_module():
     st.header('📊 Módulo de Ferias Laborales')
     st.markdown('---')
 
-    # Selección por botones
     if 'year_sel' not in st.session_state:
         st.session_state.year_sel = '2025'
     cols = st.columns(4)
@@ -121,7 +137,6 @@ def show_ferias_module():
     year = st.session_state.year_sel
     st.markdown(f'**Año seleccionado:** {year}')
 
-    # Cargar datos
     if year == 'Histórico':
         dfs = []
         for y in ['2023', '2024', '2025']:
@@ -145,19 +160,24 @@ def show_ferias_module():
     c3.metric('🏷️ Categorías', df['MACRO_CATEGORIA'].nunique())
 
     st.markdown('---')
+
+    # Selector de orden
+    st.markdown('### Orden de gráficos')
+    orden = st.selectbox("Ordenar por:", ["Por fecha", "Ascendente", "Descendente"])
+
     # Gráficos principales
     cA, cB = st.columns(2)
     with cA:
-        grafico_participantes(df)
+        grafico_participantes(df, orden)
     with cB:
-        grafico_recaudacion(df)
+        grafico_recaudacion(df, orden)
 
     st.markdown('---')
     grafico_macro_rubros(df)
     st.markdown('---')
     grafico_trend_mensual(df)
 
-    # Gráfico adicional en histórico: Participantes por año
+    # Histórico
     if year == 'Histórico':
         st.markdown('---')
         st.subheader('👥 Participantes Totales por Año')
@@ -173,6 +193,5 @@ def show_ferias_module():
         )
         fig.update_layout(showlegend=False)
         st.plotly_chart(fig, use_container_width=True)
-
 
 
