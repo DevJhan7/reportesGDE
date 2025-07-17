@@ -25,25 +25,31 @@ def load_ferias_data(year):
     return df
 
 
-def grafico_participantes(df, orden):
+def grafico_participantes(df):
+    st.subheader("👥 Participantes por Feria")
+    orden = st.selectbox("Ordenar por:", ["Por Fecha", "Ascendente", "Descendente"], key="orden_part")
+
     participantes = df['FERIA'].value_counts().reset_index()
     participantes.columns = ['FERIA', 'N_PARTICIPANTES']
 
-    # Agregar orden por fecha
-    fechas = df.groupby("FERIA")['INGRESO'].min().reset_index()
-    participantes = participantes.merge(fechas, on="FERIA")
+    fechas = (
+        df[df['INGRESO'].notna()]
+        .groupby("FERIA")['INGRESO']
+        .agg(lambda x: x.mode().iloc[0] if not x.mode().empty else x.min())
+        .reset_index()
+    )
+    participantes = participantes.merge(fechas, on="FERIA", how="left")
 
-    if orden == "Ascendente":
+    if orden == "Por Fecha":
+        participantes = participantes.sort_values("INGRESO")
+    elif orden == "Ascendente":
         participantes = participantes.sort_values("N_PARTICIPANTES")
     elif orden == "Descendente":
         participantes = participantes.sort_values("N_PARTICIPANTES", ascending=False)
-    else:  # Por fecha
-        participantes = participantes.sort_values("INGRESO")
 
     fig = px.bar(
         participantes,
         x='FERIA', y='N_PARTICIPANTES',
-        title='👥 Participantes por Feria',
         color='FERIA', color_discrete_sequence=COLOR_MAP,
         text='N_PARTICIPANTES'
     )
@@ -51,23 +57,31 @@ def grafico_participantes(df, orden):
     st.plotly_chart(fig, use_container_width=True)
 
 
-def grafico_recaudacion(df, orden):
+def grafico_recaudacion(df):
+    st.subheader("💰 Recaudación Total por Feria")
+    orden = st.selectbox("Ordenar por:", ["Por Fecha", "Ascendente", "Descendente"], key="orden_monto")
+
     df['MONTO'] = pd.to_numeric(df['MONTO'], errors='coerce')
     recaudacion = df.groupby('FERIA')['MONTO'].sum().reset_index()
-    fechas = df.groupby("FERIA")['INGRESO'].min().reset_index()
-    recaudacion = recaudacion.merge(fechas, on="FERIA")
 
-    if orden == "Ascendente":
+    fechas = (
+        df[df['INGRESO'].notna()]
+        .groupby("FERIA")['INGRESO']
+        .agg(lambda x: x.mode().iloc[0] if not x.mode().empty else x.min())
+        .reset_index()
+    )
+    recaudacion = recaudacion.merge(fechas, on="FERIA", how="left")
+
+    if orden == "Por Fecha":
+        recaudacion = recaudacion.sort_values("INGRESO")
+    elif orden == "Ascendente":
         recaudacion = recaudacion.sort_values("MONTO")
     elif orden == "Descendente":
         recaudacion = recaudacion.sort_values("MONTO", ascending=False)
-    else:  # Por fecha
-        recaudacion = recaudacion.sort_values("INGRESO")
 
     fig = px.bar(
         recaudacion,
         x='FERIA', y='MONTO',
-        title='💰 Recaudación Total por Feria',
         color='FERIA', color_discrete_sequence=COLOR_MAP,
         text='MONTO'
     )
@@ -95,15 +109,16 @@ def grafico_trend_mensual(df):
     if df_valid.empty:
         st.info('No hay fechas para mostrar tendencia mensual.')
         return
+
     monthly = (
         df_valid.groupby(df_valid['INGRESO'].dt.to_period('M'))
         .size()
         .reset_index(name='INSCRIPCIONES')
     )
-    monthly['MES_AÑO'] = monthly['INGRESO'].dt.to_timestamp()
+    monthly['MES_ANIO'] = monthly['INGRESO'].dt.to_timestamp()
     fig = px.line(
         monthly,
-        x='MES_AÑO', y='INSCRIPCIONES',
+        x='MES_ANIO', y='INSCRIPCIONES',
         markers=True,
         line_shape='spline',
         title='📈 Tendencia Mensual de Inscripciones',
@@ -112,8 +127,8 @@ def grafico_trend_mensual(df):
     fig.update_xaxes(
         tickformat='%b %Y',
         tickmode='array',
-        tickvals=monthly['MES_AÑO'],
-        ticktext=monthly['MES_AÑO'].dt.strftime('%b %Y')
+        tickvals=monthly['MES_ANIO'],
+        ticktext=monthly['MES_ANIO'].dt.strftime('%b %Y')
     )
     st.plotly_chart(fig, use_container_width=True)
 
@@ -153,31 +168,23 @@ def show_ferias_module():
         st.warning('No se encontraron registros para la opción seleccionada.')
         return
 
-    # KPIs
     c1, c2, c3 = st.columns(3)
     c1.metric('📆 Ferias', df['FERIA'].nunique())
     c2.metric('👥 Participantes', len(df))
     c3.metric('🏷️ Categorías', df['MACRO_CATEGORIA'].nunique())
 
     st.markdown('---')
-
-    # Selector de orden
-    st.markdown('### Orden de gráficos')
-    orden = st.selectbox("Ordenar por:", ["Por fecha", "Ascendente", "Descendente"])
-
-    # Gráficos principales
     cA, cB = st.columns(2)
     with cA:
-        grafico_participantes(df, orden)
+        grafico_participantes(df)
     with cB:
-        grafico_recaudacion(df, orden)
+        grafico_recaudacion(df)
 
     st.markdown('---')
     grafico_macro_rubros(df)
     st.markdown('---')
     grafico_trend_mensual(df)
 
-    # Histórico
     if year == 'Histórico':
         st.markdown('---')
         st.subheader('👥 Participantes Totales por Año')
@@ -193,5 +200,3 @@ def show_ferias_module():
         )
         fig.update_layout(showlegend=False)
         st.plotly_chart(fig, use_container_width=True)
-
-
