@@ -144,7 +144,7 @@ def grafico_estado_pago(df):
     st.plotly_chart(fig, use_container_width=True)
 
 def show_ferias_module():
-    st.header('📊 Módulo de Ferias Laborales')
+    st.header('📊 Módulo de Ferias Ambulatorias')
     st.markdown('---')
 
     st.markdown('### 🏛️ Selecciona la sede')
