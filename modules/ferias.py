@@ -3,27 +3,27 @@ import plotly.express as px
 import streamlit as st
 from pathlib import Path
 from utils.helpers import get_spanish_month
+from modules.ferias_plaza import cargar_datos_ferias_plaza
 
 # Paleta de colores
 COLOR_MAP = px.colors.qualitative.Set3
 
+def load_ferias_data(year, sede='3 Marias'):
+    if sede == 'Plaza Cívica':
+        return cargar_datos_ferias_plaza(year)
 
-def load_ferias_data(year):
-    """Carga datos procesados por año desde CSV con macro categorías"""
     archivo = Path(__file__).parent.parent / "data" / "ferias" / f"{year}_ferias_macro.csv"
     if not archivo.exists():
         return pd.DataFrame()
 
     df = pd.read_csv(archivo, sep=';', encoding='utf-8')
 
-    # Procesar fecha
     if 'INGRESO' in df.columns:
         df['INGRESO'] = pd.to_datetime(df['INGRESO'], dayfirst=True, errors='coerce')
     elif 'FECHA DE INGRESO' in df.columns:
         df['INGRESO'] = pd.to_datetime(df['FECHA DE INGRESO'], dayfirst=True, errors='coerce')
     df['MES'] = df['INGRESO'].dt.month.map(get_spanish_month)
     return df
-
 
 def grafico_participantes(df):
     st.subheader("👥 Participantes por Feria")
@@ -55,7 +55,6 @@ def grafico_participantes(df):
     )
     fig.update_layout(showlegend=False)
     st.plotly_chart(fig, use_container_width=True)
-
 
 def grafico_recaudacion(df):
     st.subheader("💰 Recaudación Total por Feria")
@@ -89,7 +88,6 @@ def grafico_recaudacion(df):
     fig.update_layout(showlegend=False)
     st.plotly_chart(fig, use_container_width=True)
 
-
 def grafico_macro_rubros(df):
     rubros = df['MACRO_CATEGORIA'].value_counts().reset_index()
     rubros.columns = ['MACRO_CATEGORIA', 'CANTIDAD']
@@ -102,7 +100,6 @@ def grafico_macro_rubros(df):
     fig.update_traces(textposition='outside')
     fig.update_layout(showlegend=False)
     st.plotly_chart(fig, use_container_width=True)
-
 
 def grafico_trend_mensual(df):
     df_valid = df[df['INGRESO'].notna()]
@@ -132,10 +129,26 @@ def grafico_trend_mensual(df):
     )
     st.plotly_chart(fig, use_container_width=True)
 
+def grafico_estado_pago(df):
+    if 'MONTO' not in df.columns:
+        return
+    pagados = df['MONTO'].apply(pd.to_numeric, errors='coerce').gt(0).sum()
+    total = len(df)
+    no_pagados = total - pagados
+    fig = px.pie(
+        names=['Pagaron', 'No pagaron'],
+        values=[pagados, no_pagados],
+        title='💳 Estado de Pago de Participantes',
+        color_discrete_sequence=['#2ecc71', '#e74c3c']
+    )
+    st.plotly_chart(fig, use_container_width=True)
 
 def show_ferias_module():
     st.header('📊 Módulo de Ferias Laborales')
     st.markdown('---')
+
+    st.markdown('### 🏛️ Selecciona la sede')
+    sede = st.radio("Sede:", ["3 Marias", "Plaza Cívica"], horizontal=True)
 
     if 'year_sel' not in st.session_state:
         st.session_state.year_sel = '2025'
@@ -150,19 +163,19 @@ def show_ferias_module():
         st.session_state.year_sel = 'Histórico'
 
     year = st.session_state.year_sel
-    st.markdown(f'**Año seleccionado:** {year}')
+    st.markdown(f'**Año seleccionado:** {year} — Sede: {sede}')
 
     if year == 'Histórico':
         dfs = []
         for y in ['2023', '2024', '2025']:
-            d = load_ferias_data(y)
+            d = load_ferias_data(y, sede)
             if not d.empty:
                 d = d.copy()
                 d['AÑO'] = y
                 dfs.append(d)
         df = pd.concat(dfs, ignore_index=True) if dfs else pd.DataFrame()
     else:
-        df = load_ferias_data(year)
+        df = load_ferias_data(year, sede)
 
     if df.empty:
         st.warning('No se encontraron registros para la opción seleccionada.')
@@ -184,6 +197,10 @@ def show_ferias_module():
     grafico_macro_rubros(df)
     st.markdown('---')
     grafico_trend_mensual(df)
+
+    if sede == 'Plaza Cívica':
+        st.markdown('---')
+        grafico_estado_pago(df)
 
     if year == 'Histórico':
         st.markdown('---')
