@@ -177,7 +177,7 @@ def grafico_estado_pago_comparado(df):
     """)
 
 def show_ferias_plaza_module():
-    st.header("📍 Ferias de la Plaza Cívica")
+    st.header("Ferias de la Plaza Cívica")
     st.markdown('---')
 
     if 'year_sel_plaza' not in st.session_state:
